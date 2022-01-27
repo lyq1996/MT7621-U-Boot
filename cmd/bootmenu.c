@@ -5,7 +5,6 @@
 
 #include <common.h>
 #include <command.h>
-#include <linux/ctype.h>
 #include <ansi.h>
 #include <menu.h>
 #include <watchdog.h>
@@ -43,26 +42,7 @@ enum bootmenu_key {
 	KEY_UP,
 	KEY_DOWN,
 	KEY_SELECT,
-	KEY_CHOICE
 };
-
-static const char choice_chars[] = {
-	'1', '2', '3', '4', '5', '6', '7', '8', '9',
-	'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
-	'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
-	'u', 'v', 'w', 'x', 'y', 'z'
-};
-
-static int find_choice(char choice)
-{
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(choice_chars); i++)
-		if (tolower(choice) == choice_chars[i])
-			return i;
-
-	return -1;
-}
 
 static char *bootmenu_getoption(unsigned short int n)
 {
@@ -98,7 +78,7 @@ static void bootmenu_print_entry(void *data)
 }
 
 static void bootmenu_autoboot_loop(struct bootmenu_data *menu,
-				enum bootmenu_key *key, int *esc, int *choice)
+				enum bootmenu_key *key, int *esc)
 {
 	int i, c;
 
@@ -127,16 +107,7 @@ static void bootmenu_autoboot_loop(struct bootmenu_data *menu,
 				*key = KEY_SELECT;
 				break;
 			default:
-				*choice = find_choice(c);
-				if ((*choice >= 0 &&
-				     *choice < menu->count - 1)) {
-					*key = KEY_CHOICE;
-				} else if (c == '0') {
-					*choice = menu->count - 1;
-					*key = KEY_CHOICE;
-				} else {
-					*key = KEY_NONE;
-				}
+				*key = KEY_NONE;
 				break;
 			}
 
@@ -158,7 +129,7 @@ static void bootmenu_autoboot_loop(struct bootmenu_data *menu,
 }
 
 static void bootmenu_loop(struct bootmenu_data *menu,
-		enum bootmenu_key *key, int *esc, int *choice)
+		enum bootmenu_key *key, int *esc)
 {
 	int c;
 
@@ -175,14 +146,6 @@ static void bootmenu_loop(struct bootmenu_data *menu,
 		if (c == '\e') {
 			*esc = 1;
 			*key = KEY_NONE;
-		} else {
-			*choice = find_choice(c);
-			if ((*choice >= 0 && *choice < menu->count - 1)) {
-				*key = KEY_CHOICE;
-			} else if (c == '0') {
-				*choice = menu->count - 1;
-				*key = KEY_CHOICE;
-			}
 		}
 		break;
 	case 1:
@@ -228,17 +191,16 @@ static char *bootmenu_choice_entry(void *data)
 	struct bootmenu_data *menu = data;
 	struct bootmenu_entry *iter;
 	enum bootmenu_key key = KEY_NONE;
-	int choice = -1;
 	int esc = 0;
 	int i;
 
 	while (1) {
 		if (menu->delay >= 0) {
 			/* Autoboot was not stopped */
-			bootmenu_autoboot_loop(menu, &key, &esc, &choice);
+			bootmenu_autoboot_loop(menu, &key, &esc);
 		} else {
 			/* Some key was pressed, so autoboot was stopped */
-			bootmenu_loop(menu, &key, &esc, &choice);
+			bootmenu_loop(menu, &key, &esc);
 		}
 
 		switch (key) {
@@ -252,8 +214,6 @@ static char *bootmenu_choice_entry(void *data)
 				++menu->active;
 			/* no menu key selected, regenerate menu */
 			return NULL;
-		case KEY_CHOICE:
-			menu->active = choice;
 		case KEY_SELECT:
 			iter = menu->first;
 			for (i = 0; i < menu->active; ++i)
@@ -315,16 +275,12 @@ static struct bootmenu_data *bootmenu_create(int delay)
 			goto cleanup;
 
 		len = sep-option;
-		entry->title = malloc(len + 4);
+		entry->title = malloc(len + 1);
 		if (!entry->title) {
 			free(entry);
 			goto cleanup;
 		}
-
-		if (i < ARRAY_SIZE(choice_chars))
-			len = sprintf(entry->title, "%c. %.*s", choice_chars[i], len, option);
-		else
-			len = sprintf(entry->title, "   %.*s", len, option);
+		memcpy(entry->title, option, len);
 		entry->title[len] = 0;
 
 		len = strlen(sep + 1);
@@ -356,13 +312,12 @@ static struct bootmenu_data *bootmenu_create(int delay)
 	}
 
 	/* Add U-Boot console entry at the end */
-	/*
 	if (i <= MAX_COUNT - 1) {
 		entry = malloc(sizeof(struct bootmenu_entry));
 		if (!entry)
 			goto cleanup;
 
-		entry->title = strdup("0. U-Boot console");
+		entry->title = strdup("U-Boot console");
 		if (!entry->title) {
 			free(entry);
 			goto cleanup;
@@ -388,7 +343,7 @@ static struct bootmenu_data *bootmenu_create(int delay)
 
 		iter = entry;
 		++i;
-	}*/
+	}
 
 	menu->count = i;
 	return menu;
