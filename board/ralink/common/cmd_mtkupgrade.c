@@ -851,48 +851,6 @@ static const char *select_part(void)
 
 	return upgrade_parts[i].id;
 }
-int check_reset_button(int index)
-{
-	struct udevice *dev;
-	
-	char buf[80];
-	int ret;
-	int offset;
-	for (ret = uclass_first_device(UCLASS_GPIO, &dev);
-	     dev;
-	     ret = uclass_next_device(&dev)){
-		const char *bank_name;
-		int num_bits;
-
-		bank_name = gpio_get_bank_info(dev, &num_bits);
-		//printf("bank_name :%s,dev name:%s,num_bits:%d\n", bank_name,dev->name,num_bits);
-		if (!num_bits) {
-			
-			debug("GPIO device %s has no bits\n", bank_name);
-			continue;
-		}
-		for (offset = 0; offset < num_bits; offset++) {
-		
-			ret = gpio_get_status_by_offset(dev, offset, buf, sizeof(buf));
-			if (ret < 0)
-				goto err;
-
-			//printf("%s,ret:%d\n", buf,ret);
-		
-			if(index == offset)
-			{
-				//printf("reset button status:%s\n",buf);
-				return ret;
-			}
-		}
-			
-		
-	}
-		 
- err:
-	printf("Error %d\n", ret);
-	return ret;
-}
 
 static int do_mtkupgrade(cmd_tbl_t *cmdtp, int flag, int argc,
 	char *const argv[])

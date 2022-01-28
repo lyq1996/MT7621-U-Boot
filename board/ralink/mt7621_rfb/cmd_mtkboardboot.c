@@ -143,9 +143,65 @@ static int mtkboardboot(void)
 	return run_command(cmd, 0);
 }
 
+static void gpio_mode_config(void)
+{
+	unsigned int gpiomode = REG32(RALINK_REG_GPIOMODE) | RALINK_GPIOMODE_DFT;;
+	REGWRITE32(RALINK_REG_GPIOMODE, gpiomode);
+}
+
+static int check_reset_button(int index)
+{
+	struct udevice *dev;
+	char buf[80];
+	int ret;
+	int offset;
+
+	for (ret = uclass_first_device(UCLASS_GPIO, &dev); dev; ret = uclass_next_device(&dev)) {
+		const char *bank_name;
+		int num_bits;
+
+		bank_name = gpio_get_bank_info(dev, &num_bits);
+		if (!num_bits) {	
+			debug("GPIO device %s has no bits\n", bank_name);
+			continue;
+		}
+		for (offset = 0; offset < num_bits; offset++) {
+			ret = gpio_get_status_by_offset(dev, offset, buf, sizeof(buf));
+			if (ret < 0)
+				goto err;
+		
+			if(index == offset)
+				return ret;
+		}
+	}
+err:
+	printf("Error %d\n", ret);
+	return ret;
+}
+
 static int do_mtkboardboot(cmd_tbl_t *cmdtp, int flag, int argc,
 	char *const argv[])
 {
+#ifdef CONFIG_WEBUI_FAILSAFE_ON_BUTTON
+	gpio_mode_config();
+	unsigned int gpio = CONFIG_WEBUI_FAILSAFE_BUTTON_GPIO;
+	unsigned int reset_value = 0;
+	// long press to enter failsafe mode
+	for(int i=0; i<3; ++i) {
+		// wait 1s
+		mdelay(1000);
+		reset_value = check_reset_button(gpio);
+		if (reset_value == 1)
+			break;
+		
+		if (i == 2 && reset_value == 0) {
+			printf("Enter failsafe mode\n");
+			run_command("httpd", 0);
+			// return and continue do mtkboardboot()
+		}
+	}
+#endif
+
 	mtkboardboot();
 
 #ifndef CONFIG_WEBUI_FAILSAFE_ON_AUTOBOOT_FAIL

@@ -16,4 +16,14 @@ config WEBUI_FAILSAFE_ON_AUTOBOOT_FAIL
 	bool "Start Failsafe Web UI on autoboot failure"
 	default n
 
+config WEBUI_FAILSAFE_ON_BUTTON
+	bool "Press and hold the button to enter the failsafe during boot, default 3 seconds"
+	default n
+
+config WEBUI_FAILSAFE_BUTTON_GPIO
+	int "Define button GPIO for enter failsafe"
+	depends on WEBUI_FAILSAFE_ON_BUTTON
+	default 15
+	range 0 95
+
 endif # WEBUI_FAILSAFE

@@ -172,15 +172,6 @@ int menu_default_choice(struct menu *m, void **choice)
 	return -ENOENT;
 }
 
-void gpio_mode_config()
-{
-	u32 gpiomode;
-	
-	gpiomode = REG32(RALINK_REG_GPIOMODE);
-	gpiomode |= RALINK_GPIOMODE_DFT;
-	REGWRITE32(RALINK_REG_GPIOMODE, gpiomode);
-}
-
 /*
  * Displays the menu and asks the user to choose an item. *choice will point
  * to the private data of the item the user chooses. The user makes a choice
