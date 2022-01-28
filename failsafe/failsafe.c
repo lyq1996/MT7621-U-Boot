@@ -203,8 +203,8 @@ static void upload_handler(enum httpd_uri_handler_status status,
 		
 		if (upgrade_success)
 			tcp_close_all_conn();
-
-		run_command("mtkautoboot", 0);
+		// mtkautoboot cause error, use reset instead.
+		run_command("reset", 0);
 
 		return;
 	}
