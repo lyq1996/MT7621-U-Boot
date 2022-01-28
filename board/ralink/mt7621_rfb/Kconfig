@@ -18,4 +18,11 @@ config DEFAULT_NOR_KERNEL_OFFSET
 
 source "board/ralink/common/Kconfig"
 
+config JDBOOT_COMPATIBLE
+	bool "Hack: use jdboot as an alias for mkboardboot"
+	default N
+	help
+	  Default environment of jdcloud_re-cp-02 sets bootcmd=jdboot.
+	  Use jdboot as an alias for mkboardboot to compatible with it.
+
 endif

@@ -214,3 +214,9 @@ static int do_mtkboardboot(cmd_tbl_t *cmdtp, int flag, int argc,
 U_BOOT_CMD(mtkboardboot, 1, 0, do_mtkboardboot,
 	"Boot MTK firmware", ""
 );
+
+#ifdef CONFIG_JDBOOT_COMPATIBLE
+U_BOOT_CMD(jdboot, 1, 0, do_mtkboardboot,
+	"Alias for mkboardboot", ""
+);
+#endif
